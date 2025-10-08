@@ -1,0 +1,41 @@
+# Node dependencies
+node_modules/
+
+# Build outputs
+/dist/
+/build/
+
+# TypeScript
+/*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Coverage / test artifacts
+coverage/
+.nyc_output/
+
+# Misc caches
+.cache/
+.tmp/
+
+# Supabase local config (if any)
+.supabase/
