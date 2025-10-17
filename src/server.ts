@@ -85,7 +85,8 @@ async function buildServer() {
     });
 
     // Compression
-    await fastify.register(compress, { global: true });
+    // Temporarily disable compression to debug frontend issue
+    // await fastify.register(compress, { global: true });
 
     // Rate limit per IP
     await fastify.register(rateLimit, {
