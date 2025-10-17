@@ -64,19 +64,24 @@ async function buildServer() {
         if (!origin) {
           return cb(null, true);
         }
-        const isExactAllowed = allowedOrigins.includes(origin);
-        const isWildcardAllowed = allowedOrigins.some((o) => {
-          if (!o.includes('*')) return false;
-          const pattern = new RegExp('^' + o.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*') + '$');
-          return pattern.test(origin);
+        const normalize = (o: string) => o.replace(/\/$/, '');
+        const requestOrigin = normalize(origin);
+        const isAllowed = allowedOrigins.some((pattern) => {
+          const pat = normalize(pattern);
+          if (pat.includes('*')) {
+            const regex = new RegExp('^' + pat
+              .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+              .replace(/\*/g, '.*') + '$');
+            return regex.test(requestOrigin);
+          }
+          return pat === requestOrigin;
         });
-        if (isExactAllowed || isWildcardAllowed) return cb(null, true);
-        const error = new Error('CORS origin not allowed');
-        return cb(error, false);
+        return cb(null, isAllowed);
       },
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization']
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+      maxAge: 86400
     });
 
     // Security headers
