@@ -56,28 +56,6 @@
       "dest": "/api/[[...slug]].ts"
     }
   ],
-  "functions": {
-    "api/[[...slug]].ts": {
-      "memory": 1024,
-      "maxDuration": 30
-    },
-    "api/auth/register.ts": {
-      "memory": 1024,
-      "maxDuration": 30
-    },
-    "api/auth/login.ts": {
-      "memory": 1024,
-      "maxDuration": 30
-    },
-    "api/auth/profile.ts": {
-      "memory": 1024,
-      "maxDuration": 30
-    },
-    "api/auth/verify.ts": {
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  },
   "env": {
     "CORS_ORIGINS": "http://localhost:8080,https://mmeraki1.netlify.app,https://*.netlify.app,https://*.vercel.app,https://mmeraki-backend1.vercel.app"
   }
