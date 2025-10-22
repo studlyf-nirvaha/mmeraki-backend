@@ -8,6 +8,6 @@
     }
   },
   "env": {
-    "CORS_ORIGINS": "http://localhost:8080,https://*.netlify.app,https://*.vercel.app,https://mmeraki-backend1.vercel.app"
+    "CORS_ORIGINS": "http://localhost:8080,https://mmeraki1.netlify.app,https://*.netlify.app,https://*.vercel.app,https://mmeraki-backend1.vercel.app"
   }
 }

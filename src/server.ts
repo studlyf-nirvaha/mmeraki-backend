@@ -49,6 +49,7 @@ async function buildServer() {
       'http://localhost:3000',
       'http://localhost:5173',
       'http://localhost:8080',
+      'https://mmeraki1.netlify.app',
       'https://*.netlify.app',
       'https://*.netlify.com',
       'https://*.vercel.app',
