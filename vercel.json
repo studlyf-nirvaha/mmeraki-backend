@@ -1,10 +1,81 @@
 {
   "version": 2,
-  "outputDirectory": "public",
+  "builds": [
+    {
+      "src": "api/[[...slug]].ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/auth/register.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/auth/login.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/auth/profile.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/auth/verify.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/auth/register",
+      "dest": "/api/auth/register.ts"
+    },
+    {
+      "src": "/api/auth/login",
+      "dest": "/api/auth/login.ts"
+    },
+    {
+      "src": "/api/auth/profile",
+      "dest": "/api/auth/profile.ts"
+    },
+    {
+      "src": "/api/auth/verify",
+      "dest": "/api/auth/verify.ts"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/[[...slug]].ts"
+    },
+    {
+      "src": "/health",
+      "dest": "/api/[[...slug]].ts"
+    },
+    {
+      "src": "/test",
+      "dest": "/api/[[...slug]].ts"
+    },
+    {
+      "src": "/",
+      "dest": "/api/[[...slug]].ts"
+    }
+  ],
   "functions": {
-    "api/**.ts": {
+    "api/[[...slug]].ts": {
       "memory": 1024,
-      "maxDuration": 10
+      "maxDuration": 30
+    },
+    "api/auth/register.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/auth/login.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/auth/profile.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/auth/verify.ts": {
+      "memory": 1024,
+      "maxDuration": 30
     }
   },
   "env": {

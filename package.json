@@ -32,6 +32,7 @@
     "dotenv": "^16.6.1",
     "fastify": "^4.29.1",
     "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^2.7.0",
     "pino-pretty": "^13.1.1"
   },
   "devDependencies": {
@@ -39,12 +40,12 @@
     "@types/node": "^20.10.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
+    "@vercel/node": "^3.0.0",
     "eslint": "^8.54.0",
     "prettier": "^3.1.0",
     "tsx": "^4.6.0",
     "typescript": "^5.3.0"
-  }
-  ,
+  },
   "engines": {
     "node": ">=18"
   }

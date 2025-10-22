@@ -1,4 +1,4 @@
-import { buildServer } from '../src/server';
+import { buildServer } from '../../src/server';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 let builtServerPromise: ReturnType<typeof buildServer> | null = null;
@@ -17,7 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const server = await getServer();
     
     // Build the full URL for the request
-    const url = new URL(req.url || '/', `https://${req.headers.host}`);
+    const url = new URL('/api/auth/register', `https://${req.headers.host}`);
     
     // Add query parameters
     if (req.query) {
@@ -38,7 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Handle the request with Fastify
     const response = await server.inject({
-      method: req.method || 'GET',
+      // Ensure method is of correct type
+      method: req.method as any || 'POST',
       url: url.pathname + url.search,
       headers,
       payload: req.body ? JSON.stringify(req.body) : undefined,

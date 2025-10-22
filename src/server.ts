@@ -62,11 +62,15 @@ async function buildServer() {
 
     await fastify.register(cors, {
       origin: (origin, cb) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) {
           return cb(null, true);
         }
+        
         const normalize = (o: string) => o.replace(/\/$/, '');
         const requestOrigin = normalize(origin);
+        
+        // Check if origin is in allowed list
         const isAllowed = allowedOrigins.some((pattern) => {
           const pat = normalize(pattern);
           if (pat.includes('*')) {
@@ -77,11 +81,17 @@ async function buildServer() {
           }
           return pat === requestOrigin;
         });
+        
+        // Also allow localhost with any port for development
+        if (requestOrigin.startsWith('http://localhost:') || requestOrigin.startsWith('https://localhost:')) {
+          return cb(null, true);
+        }
+        
         return cb(null, isAllowed);
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-API-Key'],
       maxAge: 86400
     });
 
@@ -115,7 +125,17 @@ async function buildServer() {
         status: 'ok',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
+        version: '1.0.0'
+      };
+    });
+
+    // Simple test endpoint
+    fastify.get('/test', async (request, reply) => {
+      return {
+        success: true,
+        message: 'Server is running',
+        timestamp: new Date().toISOString()
       };
     });
 
