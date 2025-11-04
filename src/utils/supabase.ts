@@ -64,21 +64,84 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
  * Upload an image to Supabase Storage
  * @param file - File buffer or base64 string
  * @param fileName - Name for the file
- * @param bucket - Storage bucket name (default: 'experiences')
+ * @param bucket - Storage bucket name (default: 'images')
  * @returns URL of the uploaded file
  */
 export async function uploadImage(
   file: Buffer | string,
   fileName: string,
-  bucket: string = 'experiences'
+  bucket: string = 'images'
 ): Promise<string> {
   try {
-    const { data, error } = await supabaseAdmin.storage
+    // Determine content type from file extension
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    let contentType = 'image/jpeg'; // default
+    
+    switch (extension) {
+      case 'png':
+        contentType = 'image/png';
+        break;
+      case 'gif':
+        contentType = 'image/gif';
+        break;
+      case 'webp':
+        contentType = 'image/webp';
+        break;
+      case 'svg':
+        contentType = 'image/svg+xml';
+        break;
+      case 'jpg':
+      case 'jpeg':
+      default:
+        contentType = 'image/jpeg';
+        break;
+    }
+
+    // First, try to upload to the specified bucket
+    let { data, error } = await supabaseAdmin.storage
       .from(bucket)
       .upload(fileName, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true, // Allow overwriting
+        contentType: contentType
       });
+
+    // If bucket doesn't exist, try to create it or use a fallback
+    if (error && error.message.includes('Bucket not found')) {
+      console.log(`Bucket '${bucket}' not found, trying to create it or use fallback...`);
+      
+      // Try to create the bucket
+      try {
+        const { data: bucketData, error: bucketError } = await supabaseAdmin.storage
+          .createBucket(bucket, {
+            public: true,
+            fileSizeLimit: 10485760 // 10MB
+          });
+        
+        if (bucketError) {
+          console.log('Could not create bucket, using fallback...');
+          // Use a fallback bucket name
+          bucket = 'public';
+        } else {
+          console.log(`Bucket '${bucket}' created successfully`);
+        }
+      } catch (createError) {
+        console.log('Could not create bucket, using fallback...');
+        bucket = 'public';
+      }
+
+      // Retry upload with the bucket (either newly created or fallback)
+      const retryResult = await supabaseAdmin.storage
+        .from(bucket)
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: contentType
+        });
+      
+      data = retryResult.data;
+      error = retryResult.error;
+    }
 
     if (error) {
       throw new Error(`Upload failed: ${error.message}`);
@@ -88,6 +151,7 @@ export async function uploadImage(
       .from(bucket)
       .getPublicUrl(data.path);
 
+    console.log(`Image uploaded successfully to bucket '${bucket}': ${publicUrl.publicUrl}`);
     return publicUrl.publicUrl;
   } catch (error) {
     console.error('Error uploading image:', error);

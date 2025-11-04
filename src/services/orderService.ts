@@ -107,6 +107,89 @@ export class OrderService {
 
     return data || [];
   }
+
+  async getAllOrders() {
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items (
+          id,
+          quantity,
+          unit_price,
+          selected_date,
+          selected_time,
+          addons,
+          experiences (
+            id,
+            title,
+            slug,
+            category,
+            base_price,
+            images
+          )
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch all orders: ${error.message}`);
+    }
+
+    // Transform the data to match frontend expectations
+    const transformedOrders = (data || []).map((order: any) => ({
+      id: order.id,
+      created_at: order.created_at,
+      updated_at: order.created_at, // Using created_at as updated_at for now
+      customer: {
+        firstName: order.first_name,
+        lastName: order.last_name,
+        email: order.email,
+        phone: order.phone,
+        address: order.address,
+        city: order.city,
+        pincode: order.pincode,
+        state: order.state
+      },
+      event: order.order_items?.[0]?.experiences ? {
+        id: order.order_items[0].experiences.id,
+        title: order.order_items[0].experiences.title,
+        category: order.order_items[0].experiences.category,
+        price: order.order_items[0].unit_price,
+        image: order.order_items[0].experiences.images?.[0] || '/placeholder.svg'
+      } : {
+        id: 'unknown',
+        title: 'Unknown Event',
+        category: 'Unknown',
+        price: 0,
+        image: '/placeholder.svg'
+      },
+      payment_method: order.payment_method,
+      payment_status: order.payment_id ? 'completed' : 'pending',
+      order_status: order.status,
+      selected_date: order.order_items?.[0]?.selected_date || null,
+      selected_time: order.order_items?.[0]?.selected_time || null,
+      total_amount: parseFloat(order.total_amount),
+      notes: order.order_items?.[0]?.addons ? JSON.stringify(order.order_items[0].addons) : null
+    }));
+
+    return transformedOrders;
+  }
+
+  async updateOrderStatus(orderId: string, status: string) {
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId)
+      .select('id')
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update order status: ${error.message}`);
+    }
+
+    return !!data;
+  }
 }
 
 

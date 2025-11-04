@@ -77,6 +77,113 @@ export class AuthController {
     }
   }
 
+  // Admin login - strict verification for admin access
+  async adminLogin(request: FastifyRequest<{ Body: LoginRequest }>, reply: FastifyReply) {
+    try {
+      const { email, password } = request.body;
+
+      // Validate required fields
+      if (!email || !password) {
+        return reply.status(400).send({
+          success: false,
+          message: 'Email and password are required'
+        });
+      }
+
+      // Check if email is the specific admin email
+      if (email !== 'mmeraki.event@gmail.com') {
+        return reply.status(401).send({
+          success: false,
+          message: 'Access denied. Only authorized administrators can access this area.'
+        });
+      }
+
+      // Get user by email
+      const user = await this.userService.getUserByEmail(email);
+      if (!user) {
+        return reply.status(401).send({
+          success: false,
+          message: 'Admin account not found. Please contact system administrator.'
+        });
+      }
+
+      // Check if user has admin role
+      if (user.role !== 'admin') {
+        return reply.status(401).send({
+          success: false,
+          message: 'Access denied. Admin role required.'
+        });
+      }
+
+      // Check if user is active
+      if (!user.is_active) {
+        return reply.status(401).send({
+          success: false,
+          message: 'Admin account is deactivated'
+        });
+      }
+
+      // Verify password
+      if (!user.hashed_password) {
+        return reply.status(401).send({
+          success: false,
+          message: 'Admin account not properly configured'
+        });
+      }
+
+      const isPasswordValid = await this.userService.verifyPassword(password, user.hashed_password);
+      if (!isPasswordValid) {
+        return reply.status(401).send({
+          success: false,
+          message: 'Invalid admin credentials'
+        });
+      }
+
+      // Update last login
+      await this.userService.updateLastLogin(user.id);
+
+      // Generate JWT token
+      const token = generateToken(user.id, user.email);
+
+      // Return admin user data
+      const adminUser = {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        phone_number: user.phone_number,
+        profile_icon: user.profile_icon,
+        current_location: user.current_location,
+        gender: user.gender,
+        date_of_birth: user.date_of_birth,
+        wishlisted_items: user.wishlisted_items || [],
+        past_orders: user.past_orders || [],
+        cart_items: user.cart_items || [],
+        payment_methods: user.payment_methods || [],
+        is_active: user.is_active,
+        is_verified: user.is_verified,
+        last_login: user.last_login,
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      };
+
+      return reply.send({
+        success: true,
+        message: 'Admin login successful',
+        user: adminUser,
+        token
+      });
+
+    } catch (error: any) {
+      console.error('Admin login error:', error);
+      const isDev = process.env.NODE_ENV !== 'production';
+      return reply.status(500).send({
+        success: false,
+        message: isDev ? String(error?.message || error) : 'Admin login failed'
+      });
+    }
+  }
+
   // Login user
   async login(request: FastifyRequest<{ Body: LoginRequest }>, reply: FastifyReply) {
     try {

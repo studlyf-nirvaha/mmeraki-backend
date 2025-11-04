@@ -51,6 +51,47 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   }, authController.register.bind(authController));
 
+  // Admin login route
+  fastify.post('/admin/login', {
+    schema: {
+      description: 'Admin login - strict verification for admin access',
+      tags: ['Authentication', 'Admin'],
+      body: {
+        type: 'object',
+        required: ['email', 'password'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          password: { type: 'string', minLength: 6 }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+            user: { type: 'object' },
+            token: { type: 'string' }
+          }
+        },
+        400: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' }
+          }
+        },
+        401: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, authController.adminLogin.bind(authController));
+
   // Login route
   fastify.post('/login', {
     schema: {

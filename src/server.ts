@@ -8,8 +8,8 @@ import dotenv from 'dotenv';
 import { experienceRoutes } from './routes/experienceRoutes';
 import { seedRoutes } from './routes/seedRoutes';
 import authRoutes from './routes/authRoutes';
-import { wishlistRoutes } from './routes/wishlistRoutes';
 import { cartRoutes } from './routes/cartRoutes';
+import imageRoutes from './routes/imageRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -50,6 +50,7 @@ async function buildServer() {
       'http://localhost:5173',
       'http://localhost:8080',
       'https://mmeraki1.netlify.app',
+      'https://mmeraki.com',
       'https://*.netlify.app',
       'https://*.netlify.com',
       'https://*.vercel.app',
@@ -143,10 +144,11 @@ async function buildServer() {
     await fastify.register(experienceRoutes, { prefix: '/api' });
     await fastify.register(seedRoutes, { prefix: '/api' });
     await fastify.register(authRoutes, { prefix: '/api/auth' });
-    await fastify.register(wishlistRoutes, { prefix: '/api/wishlist' });
+    
     await fastify.register(cartRoutes, { prefix: '/api/cart' });
     const orderRoutes = (await import('./routes/orderRoutes')).default;
     await fastify.register(orderRoutes, { prefix: '/api' });
+    await fastify.register(imageRoutes, { prefix: '/api' });
 
     // Root endpoint
     fastify.get('/', async (request, reply) => {
@@ -170,13 +172,7 @@ async function buildServer() {
             verify: 'GET /api/auth/verify',
             logout: 'POST /api/auth/logout'
           },
-          wishlist: {
-            get: 'GET /api/wishlist',
-            add: 'POST /api/wishlist',
-            remove: 'DELETE /api/wishlist/:experience_id',
-            check: 'GET /api/wishlist/check/:experience_id',
-            count: 'GET /api/wishlist/count'
-          },
+          
           cart: {
             get: 'GET /api/cart',
             add: 'POST /api/cart',

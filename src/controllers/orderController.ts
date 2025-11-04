@@ -44,6 +44,39 @@ export class OrderController {
       return reply.status(500).send({ success: false, message: isDev ? String(error?.message || error) : 'Failed to fetch orders' });
     }
   }
+
+  async listAllOrders(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const orders = await this.orderService.getAllOrders();
+      return reply.send({ success: true, orders });
+    } catch (error: any) {
+      console.error('List all orders error:', error);
+      const isDev = process.env.NODE_ENV !== 'production';
+      return reply.status(500).send({ success: false, message: isDev ? String(error?.message || error) : 'Failed to fetch orders' });
+    }
+  }
+
+  async updateOrderStatus(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { orderId } = request.params as { orderId: string };
+      const { status } = request.body as { status: string };
+      
+      if (!orderId || !status) {
+        return reply.status(400).send({ success: false, message: 'Order ID and status are required' });
+      }
+
+      const updated = await this.orderService.updateOrderStatus(orderId, status);
+      if (!updated) {
+        return reply.status(404).send({ success: false, message: 'Order not found' });
+      }
+
+      return reply.send({ success: true, message: 'Order status updated successfully' });
+    } catch (error: any) {
+      console.error('Update order status error:', error);
+      const isDev = process.env.NODE_ENV !== 'production';
+      return reply.status(500).send({ success: false, message: isDev ? String(error?.message || error) : 'Failed to update order status' });
+    }
+  }
 }
 
 

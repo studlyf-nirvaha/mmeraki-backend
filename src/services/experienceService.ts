@@ -1,8 +1,11 @@
 import { supabase, supabaseAdmin } from '../utils/supabase';
 import { Experience, CreateExperienceData, ExperienceFilters } from '../types/Experience';
 import { generateSlug } from '../utils/slugGenerator';
+import { ImageService } from './imageService';
 
 export class ExperienceService {
+  private imageService = new ImageService();
+
   /**
    * Get all experiences with optional filtering
    */
@@ -104,13 +107,53 @@ export class ExperienceService {
         throw new Error(`Experience with slug '${slug}' already exists`);
       }
 
+      // Process images if provided
+      let processedImages: string[] = [];
+      let processedThumbnail: string | undefined;
+
+      if (experienceData.images && experienceData.images.length > 0) {
+        console.log('Processing images for experience:', experienceData.title);
+        
+        // Process thumbnail first
+        if (experienceData.thumbnail_url) {
+          const thumbnailResult = await this.imageService.processAndStoreImage(
+            experienceData.thumbnail_url,
+            'temp-' + Date.now(),
+            0
+          );
+          if (thumbnailResult.success && thumbnailResult.url) {
+            processedThumbnail = thumbnailResult.url;
+          }
+        }
+
+        // Process all images
+        const imageResults = await this.imageService.processMultipleImages(
+          experienceData.images,
+          'temp-' + Date.now()
+        );
+
+        processedImages = imageResults
+          .filter(result => result.success && result.url)
+          .map(result => result.url!);
+
+        // If no thumbnail was processed, use the first successful image
+        if (!processedThumbnail && processedImages.length > 0) {
+          processedThumbnail = processedImages[0];
+        }
+      }
+
+      // Prepare data for insertion
+      const dataToInsert = {
+        ...experienceData,
+        slug,
+        images: processedImages.length > 0 ? processedImages : experienceData.images,
+        thumbnail_url: processedThumbnail || experienceData.thumbnail_url,
+        created_at: new Date().toISOString()
+      };
+
       const { data, error } = await supabaseAdmin
         .from('experiences')
-        .insert([{
-          ...experienceData,
-          slug,
-          created_at: new Date().toISOString()
-        }])
+        .insert([dataToInsert])
         .select()
         .single();
 
@@ -121,6 +164,13 @@ export class ExperienceService {
         }
         throw new Error(`Failed to create experience: ${error.message}`);
       }
+
+      console.log('Experience created successfully with processed images:', {
+        id: data.id,
+        title: data.title,
+        imagesCount: processedImages.length,
+        thumbnail: !!processedThumbnail
+      });
 
       return data;
     } catch (error) {
@@ -137,7 +187,7 @@ export class ExperienceService {
       // First check if the experience exists
       const { data: existingData, error: checkError } = await supabaseAdmin
         .from('experiences')
-        .select('id')
+        .select('id, title')
         .eq('id', id)
         .single();
 
@@ -145,10 +195,53 @@ export class ExperienceService {
         return null; // Experience not found
       }
 
+      // Process images if provided
+      let processedImages: string[] | undefined;
+      let processedThumbnail: string | undefined;
+
+      if (updates.images && updates.images.length > 0) {
+        console.log('Processing images for experience update:', existingData.title);
+        
+        // Process thumbnail first
+        if (updates.thumbnail_url) {
+          const thumbnailResult = await this.imageService.processAndStoreImage(
+            updates.thumbnail_url,
+            id,
+            0
+          );
+          if (thumbnailResult.success && thumbnailResult.url) {
+            processedThumbnail = thumbnailResult.url;
+          }
+        }
+
+        // Process all images
+        const imageResults = await this.imageService.processMultipleImages(
+          updates.images,
+          id
+        );
+
+        processedImages = imageResults
+          .filter(result => result.success && result.url)
+          .map(result => result.url!);
+
+        // If no thumbnail was processed, use the first successful image
+        if (!processedThumbnail && processedImages.length > 0) {
+          processedThumbnail = processedImages[0];
+        }
+      }
+
       // If title is being updated, generate new slug
       let updateData: Partial<CreateExperienceData> & { slug?: string } = { ...updates };
       if (updates.title) {
         (updateData as any).slug = generateSlug(updates.title);
+      }
+
+      // Update with processed images
+      if (processedImages !== undefined) {
+        updateData.images = processedImages;
+      }
+      if (processedThumbnail) {
+        updateData.thumbnail_url = processedThumbnail;
       }
 
       const { data, error } = await supabaseAdmin
@@ -165,6 +258,13 @@ export class ExperienceService {
         }
         throw new Error(`Failed to update experience: ${error.message}`);
       }
+
+      console.log('Experience updated successfully with processed images:', {
+        id: data.id,
+        title: data.title,
+        imagesCount: processedImages?.length || 0,
+        thumbnail: !!processedThumbnail
+      });
 
       return data;
     } catch (error) {
